@@ -1,0 +1,15 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+arch-atas.csv
+arch-grov.csv
+arch-nrp.csv
+arch-red.csv
+arch-carr.csv
+arch-morro.csv
+arch-cdf.csv
+arch-mesa.csv
+arch-oso.csv
+data/
+html/

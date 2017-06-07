@@ -1,0 +1,278 @@
+---
+output:
+  html_document:
+    theme: cerulean
+params:
+  directory:
+    label: "Directory to look for data files:"
+    value: "H: drive"
+    input: radio
+    choiceNames: ["../data", "Desktop", "Other - must specify full path in filename, below"]
+    choiceValues: ["H: drive", "Desktop", "Other"]
+  filename: 
+    label: "AirVision filename:" 
+    value: "BasicDataExportReport.csv"
+  comment: 
+    label: "Comment (optional):"
+    value: ""
+  ignore:
+    label: "Run screen even on incomplete data?"
+    value: FALSE
+    input: radio
+    choiceNames: ["Yes", "No"]
+    choiceValues: [TRUE, FALSE]  
+---
+
+```{r libraries_data_checks, echo=FALSE, warning=FALSE, message=FALSE}
+
+library(dplyr, warn.conflicts=FALSE)
+library(openair, warn.conflicts=FALSE)
+
+filename <- params$filename
+logscale <- params$logscale
+comment <- params$comment
+dir <- params$directory
+
+if(dir == "H: drive") dir <- paste0(getwd(), "/data/")
+if(dir == "Desktop") {
+  path <- strsplit(path.expand("~"), "/")[[1]]
+  path <- path[1:(length(path)-1)]
+  path <- paste(path, collapse = "/")
+  dir <- paste(path, "Desktop/", sep = "/")
+} 
+if(dir == "Other") {
+  path <- strsplit(filename,"\\", fixed = TRUE)[[1]]
+  dir <- paste0(path[-length(path)], collapse = "/")
+  dir <- paste0(dir, "/")
+  filename <- path[length(path)]
+  rm(path)
+} 
+
+## Check inputs, load data:
+
+# check AirVision file is present
+if(!filename %in% list.files(dir)) {
+  stop(paste0("File ", filename, " not found in ", dir, "."), call. = FALSE)
+} 
+
+# read file
+d <- read.table(paste0(dir, filename), colClasses="character", header=F, sep=",")
+  
+# check for multiple sites
+site <- unique(unlist(d[1,-1]))
+if(length(site)!=1) {
+  stop("Multiple site codes are present in file. Only one site is allowed.", call. = FALSE)
+}
+
+  
+#check date range
+dates<-as.POSIXct(d[-c(1:3),1], tz="UTC", format="%d-%b-%Y %H:%M")
+month<-unique(format(dates, "%B"))
+if(length(month)!=1) {stop ("All data must be from the same month.", call. = FALSE)}
+  
+#check for complete month of data:
+if( month %in% month.name[c(1,3,5,7,8,10,12)] ){
+   if(nrow(d)!=744+3 & ignore==F) stop("Month is incomplete. Set 'ignore=T' to run anyway.", call. = FALSE)
+}
+  
+if( month == "February" ){
+   if( nrow(d)!=672+3 & nrow(d)!=696+3 & ignore==F) {
+     stop("Month is incomplete. Set 'ignore=T' to run anyway.", call. = FALSE)
+   } 
+}
+  
+if( month %in% month.name[c(4,6,9,11)] ){
+  if(nrow(d)!=720+3 & ignore==F) stop("Month is incomplete. Set 'ignore=T' to run anyway.", call. = FALSE)
+}
+
+##format data
+d <- d[-1, ] # get rid of site names header row...
+vars <- tolower(d[1,])
+if(("atm" %in% vars)==TRUE) {vars[match("atm", vars)] <- "amt"}
+if(("ambtemp" %in% vars)==TRUE) {vars[match("ambtemp", vars)] <- "amt"}
+if(("ozone" %in% vars)==TRUE) {vars[match("ozone", vars)] <- "o3"}
+if(("pm10_contin" %in% vars)==TRUE) {vars[match("pm10_contin", vars)] <- "bam10"}
+if(("pm10_std" %in% vars)==TRUE) {vars[match("pm10_std", vars)] <- "bam10std"}
+if(("stm" %in% vars)==TRUE) {vars[match("stm", vars)] <- "rmt"}
+if(("sigtheta" %in% vars)==TRUE) {vars[match("sigtheta", vars)] <- "sigt"}
+if(("vwsp" %in% vars)==TRUE) {vars[match("vwsp", vars)] <- "wsv"}
+if(("vwdr" %in% vars)==TRUE) {vars[match("vwdr", vars)] <- "wdv"}
+if(("wdr" %in% vars)==TRUE) {vars[match("wdr", vars)]<-"wdv"}
+
+vars[1] <- "date"
+names(d) <- vars
+d <- d[-c(1,2),]
+n.param <- length(vars)
+d[,2:n.param] <- apply(d[,2:n.param], 2, as.numeric)
+d$date <- dates
+
+## check that at least one pollutant is present:
+
+if (sum(c("o3", "no", "no2", "nox", "so2", "bam10", "bam25") %in% vars)==0) {
+    stop("At least one pollutant must be present.", call. = FALSE)}
+
+```
+
+## Exceedence Report for `r site`, `r format(d$date[1], "%B %Y")`.
+
+`r comment`
+
+### Data Summary
+```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=""}
+Minimum<- apply(d[,2:n.param], 2, min, na.rm=T )
+Maximum<-apply(d[,2:n.param], 2, max, na.rm=T )
+Average<-round(apply(d[,2:n.param], 2, mean, na.rm=T), 1)
+Missing<-apply(d[,2:n.param], 2, function(x) sum(is.na(x)) )
+Completeness<-trunc(100-100*Missing/dim(d)[1],0)
+
+cbind(Minimum, Maximum, Average, Missing, Completeness)
+```
+------
+
+### Exceedence Summary
+```{r,echo=FALSE, warning=FALSE, message=FALSE, comment="", collapse = TRUE}
+
+#8-hour ozone stanard
+
+if("o3" %in% names(d)==TRUE){
+  sub<-select(d, o3, date)
+  sub<-timeAverage(rollingMean(sub, poll="o3", width=8, align="left"), stat="max")
+  sub %>% 
+    filter(rolling8o3 > 70) %>%
+    select(date=date, exceedence=rolling8o3) ->
+    sub
+
+  if(dim(sub)[1] >= 1){
+    cat("\n")
+    cat("Exceedences of the 8-hr ozone standard (70 ppb): \n")
+    print(data.frame(sub))
+  } else {
+    cat("No exceedences of the 8-hr ozone standard (70 ppb). \n")
+  }
+}
+
+
+#1-hr ozone standard
+if("o3" %in% names(d)==TRUE){
+  sub<-select(d, o3, date)
+  sub<-timeAverage(sub, stat="max")
+  sub %>% 
+    filter(o3 > 90) %>%
+    select(date=date, exceedence=o3) ->
+    sub
+
+  if(dim(sub)[1] >= 1){
+    cat("\n")
+    cat("Exceedences of the 1-hr ozone standard (90 ppb): \n")
+    print(data.frame(sub))
+  } else {
+    cat("No exceedences of the 1-hr ozone standard (90 ppb). \n")
+  }
+}
+
+#1-hr no2 standard
+if("no2" %in% names(d)==TRUE){
+  sub<-select(d, no2, date)
+  sub<-timeAverage(sub, stat="max")
+  sub %>% 
+    filter(no2 > 100) %>%
+    select(date=date, exceedence=no2) ->
+    sub
+
+  if(dim(sub)[1] >= 1){
+    cat("\n")
+    cat("Exceedences of the 1-hr NO2 standard (100 ppb): \n")
+    print(data.frame(sub))
+  } else {
+    cat("No exceedences of the 1-hr NO2 standard (100 ppb). \n")
+  }
+}
+
+#1-hr so2 standard
+if("so2" %in% names(d)==TRUE){
+  sub<-select(d, so2, date)
+  sub<-timeAverage(sub, stat="max")
+  sub %>% 
+    filter(so2 > 75) %>%
+    select(date=date, exceedence=so2) ->
+    sub
+
+  if(dim(sub)[1] >= 1){
+    cat("\n")
+    cat("Exceedences of the Federal 1-hr SO2 standard (75 ppb): \n")
+    print(data.frame(sub))
+  } else {
+    cat("No exceedences of the Federeal 1-hr SO2 standard (75 ppb). \n")
+  }
+}
+
+#pm2.5 standard
+
+if("bam25" %in% names(d)==TRUE){
+  sub<-select(d, bam25, date)
+  sub<-timeAverage(sub, stat="mean")
+  sub %>% 
+    filter(bam25 > 35) %>%
+    select(date=date, exceedence=bam25) ->
+    sub
+
+  if(dim(sub)[1] >= 1){
+    cat("\n")
+    cat("Exceedences of the 24-hr PM2.5 standard (35 ug/m3): \n")
+    print(data.frame(sub), digits=3)
+  } else {
+    cat("No exceedences of the 24-hr PM2.5 standard (35 ug/m3). \n")
+  }
+}
+
+#pm10 state standard
+
+if("bam10" %in% names(d)==TRUE){
+  sub<-select(d, bam10, date)
+  sub<-timeAverage(sub, stat="mean")
+  sub %>% 
+    filter(bam10 > 50) %>%
+    select(date=date, exceedence=bam10) ->
+    sub
+
+  if(dim(sub)[1] >= 1){
+    cat("\n")
+    cat("Exceedences of the California 24-hr PM10 standard (50 ug/m3): \n")
+    print(data.frame(sub), digits=3)
+  } else {
+    cat("No exceedences of the California 24-hr PM10 standard (50 ug/m3). \n")
+  }
+}
+
+#pm10 federal standard
+
+if("bam10std" %in% names(d)==TRUE){
+  sub<-select(d, bam10std, date)
+  sub<-timeAverage(sub, stat="mean")
+  sub %>% 
+    filter(bam10std > 155) %>%
+    select(date=date, exceedence=bam10std) ->
+    sub
+
+  if(dim(sub)[1] >= 1){
+    cat("\n")
+    cat("Exceedences of the Federal 24-hr PM10 standard (155 ug/m3, STP): \n")
+    print(data.frame(sub), digits=3)
+  } else {
+    cat("No exceedences of the Federal 24-hr PM10 standard (155 ug/m3, STP). \n")
+  }
+}
+
+```
+
+### Session Info
+```{r, echo=FALSE, warning=FALSE, message=FALSE, comment="", collapse = TRUE}
+## generate list of files used, session info...
+raw <- paste0(dir, params$filename)
+
+cat("Report generated:", date(), "\n")
+cat("Raw data file:", raw)
+```
+
+
+Reviewed by (signature/date): ______________________________

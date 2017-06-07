@@ -1,0 +1,252 @@
+---
+title: "Data Screen Version 2 Manual"
+author: "Karl Tupper, SLOAPCD"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+```{r global_options, echo=FALSE}
+options(width=120)
+knitr::opts_chunk$set(comment="", echo = TRUE, eval=FALSE )
+source(paste(getwd(),"functions.R", sep="/"))
+```
+## Why R?
+
+SLOCAPCD has used a few different data screens as part of its data validation process. In the past they were implemented in Excel and Word. R has a more powerful set of tools, so using it for data screening opens up opportunities for more advanced data analysis and visualization. Once familiar with R / RStudio, running screens in R is also easier. For example, under the old Word-based system, creating a printable record of calibrations required generating control charts individually in AirVision, exporting them one by one, then compiling them into a Word document for printing. With the "calibrations()" tool described below, all that's required is exporting a single file from AirVision and then runing one function in R to generate a printable html file. Another advantage is that html files produced by the R screens are smaller and thus more readily archived than the Excel files produced by the old tools.
+
+## Getting Started
+
+### Software
+
+R, RStudio, and a few add on packages are needed to run the data screen. All are free. They should be installed in that order.
+
+R is available from https://www.r-project.org/. Click on "Download R" and follow the instructions for "base" installation. The default options should work just fine.
+
+Rstudio is available from https://www.rstudio.com/. You want the "Desktop" version and the open source (i.e. free) edition. Default installation options should work just fine here, too.
+
+Before using the R screens you will need to install some add-on "packages":  `shiny`, `rmarkdown`, and `openair` and `dplyr`. So the first time you open up R, the first thing you will want to do is cut and paste the following into the "Console" and press enter:
+
+```{r, eval=F}
+install.packages(c("dplyr", "rmarkdown", "openair", "shiny"))
+```
+
+### Using R
+
+A few quick things to note about using R:
+
+* R is case sensitive. `Screen()` is not the same as `screen()`.
+* You mostly work with "functions" in R. Functions always have parentheses, like this: `screen()`. Sometimes "arguments" will go inside the parentheses: `screen(filename="example.csv")`, sometimes not, but the parentheses are _always_ required, even if they don't enclose anything. So typing `screen` instead of `screen()` will not work. (Rather than running the function, this will instead display the code of the function.)
+* Pay attention to quotation marks--the are offten required. If you get and error or something unexpected happens, make sure that things are properly quoted.
+* Usually it takes negligible time for commands to execute, but sometimes R needs to "think". While R is thinking, the console prompt (`>`) will disappear and a red stop sign will appear in the upper right corner of the console. 
+
+More general information on R:
+
+* http://tryr.codeschool.com/levels/1/challenges/1 (Very brief, 100% online; you don't even need to install R or RStudio on your computer to try it.)
+* http://mazamascience.com/Classes/PWFSL_2014/ (More in depth, with an emphasis on Fire Science applications.) 
+* http://www.openair-project.org/PDF/OpenAir_Manual.pdf (Even more in depth, with an emphasis on air quality. Start with Chapter 3, “Basic Use of R”.)
+
+### Using RStudio
+
+When you open up RStudio, the screen will be split into 3 or 4 panes. All commands need to be typed into the "Console", which is on the left. You can pretty much ignore the other panes. A few useful tips/tricks:
+
+* Press Esc to clear whatever you've typed without executing it.
+* When cursor is in the console, pressing the up or down arrow will cycle through previous commands, which can then be editted or re-run. This should save some typing.
+
+## The Data Screening Tools
+### General Instructions
+
+To get started, click on ``r paste(getwd(), "Screen2.Rproj", sep="/")``. This will launch RStudio and the data screening tools.
+
+> __Never move, alter, delete, or look sideways at any of the files in this folder. These are the nuts and bolts of the tools, and they need stay in this directory intact and unaltered.__
+
+Each screen is a function that uses a file exported from AirVision as its input. AirVision exports can be put in ``r paste(getwd(), "data", sep="/")``--by default this is where the screening tools expect to find data. Each screen generates an html file that can be viewed or printed. The file should automatically launch in your web brower, and by default it will be saved in ``r paste(getwd(), "html", sep="/")``. Files in the these two folders can be moved, deleted, etc., __just do not add or remove anything from the parent directory__.
+
+There are two ways to use most of the tools: via command line interface or via a webpage. The command line interface offers a little more flexibility but the web interface is easier to use. Both run the exact same tests and generate identical reports.
+
+To end your session, type `quit()` or simply `q()` to exit. You'll be asked if you want to save the workspace image; you can safely answer `y` or `n`.
+
+### The Basic Data Screen: screen()
+The function `screen()` is intended to replace `NewDataScreen-2.xlsm` and `BAMScreen.xlsm`. It runs all the same tests as these Excel-based screens, with the exception of the tests that look at the standard deviation of wind speed/direction and temperature. (These tests have not proven to be useful, and the some were designed with mechanical wind systems in mind, which are no longer in use.) It can also analyze station temperature and it does some new tests.
+
+To use `screen()` __via the command line interface__, run a "BasicDataExport" in AirVision, selecting all hourly pollutant and meteorological parameters for one month. Room temperature can also be included. Save the file to ``r paste(getwd(), "data", sep="/")``. By default, AirVision will name the file `BasicDataExportReport.csv` but you can rename it to anything you like. For this example, I have exported June 2015 data for Red Hills, and named the file [`example-RH-062015.csv`](Examples\example-RH-062015.csv). The screen is run by entering the following into the console:
+
+```{r, eval=F}
+screen(filename = "example-RH-062015.csv")
+```
+
+which produces [this html file](Examples\example-RH-062015.html). The argument `filename=` is used to tell the function where to find data. Note that the quotes are required and omitting them will produce an error. The name of html output file, `example-RH-062015.html`, was generated automatically based on the name of input datafile. The html files produced by `screen()` are always written to `r paste(getwd(), "html", sep="/")`.
+
+It is also possible to specify costum a name for the html file, using the `html=` argument. So:
+
+```{r, eval=F}
+screen(filename="example-RH-062015.csv", html="RedHillsJune2015.html")
+```
+
+would produce the exact same output file, but it would be named `RedHillsJune2015.html` instead. Ending  the name with `.html` or `.htm` is required.
+
+For sites with BAMs, `screen()` can optionally analyze the BAM digital data. The function will look for the BAM digital data in the usual place (i.e. `.../data`), and it needs to be in the same format as for `BAMscreen.xlsm`. In this example, [January 2017 data from Atascadero](Examples\AT-2017-01.csv) is used. The Airvision export includes the BAM concentration data logged by the station logger and polled by AirVision. The files [`AT-2017-01-BAM10.csv`](Examples\AT-2017-01-BAM10.csv) and [`AT-2017-01-BAM25.csv`](Examples\AT-2017-01-BAM25.csv) contain the BAM digital downloads. The following code runs the screen: 
+
+```{r, eval=F}
+screen(filename = "AT-2017-01.csv", bam10 = "AT-2017-01-BAM10.csv", bam25 = "AT-2017-01-BAM25.csv")
+```
+
+and produces [this html file](Examples\AT-2017-01.html). In this case, its actually only necessary to type the following:
+
+```{r, eval=F}
+screen("AT-2017-01.csv", "AT-2017-01-BAM10.csv", "AT-2017-01-BAM25.csv")
+```
+
+to produce the same report. This is because R uses "positional matching" to figure out "unnnamed arguments". In other words, it's expecting the first argument to be `filename=` so if the first argument is indeed the filename, then you can omit "filename=" from the typing. Likewise, it is expecting `bam10=` as the second argument, and `bam25=` as the third. But this trick only works if the arguments are specified in the order that `screen()` is expecting them. 
+
+There are a couple other arguments that you can play with in `screen()`:
+
+* `comment=` Lets you add a comment to html file. It will appear at the top of the page. The comment must be in quotes. For example:
+
+```{r, eval=F}
+screen("AT-2017-01.csv", comment = "Here is an example of a comment. Note that the BAM digital data is not included here; the resulting html report will thus omit the BAM digital data screens.", html="example-with-comment.htm")
+```
+
+produces [this](Examples\example-with-comment.htm).
+
+* `ignore=TRUE` By default, `screen()` is expecting a full month of data, and it's going to give an error if it finds anything less. Including `ignore=TRUE` in the call tells it to ignore the fact that there's missing data, and run the screen and generate the html file anyway.
+
+To use `screen()` __via webpage interface__, simply enter `screen()` into console and press enter:
+
+```{r, eval = FALSE}
+screen()
+```
+
+A webpage will launch in your default browser:
+![](images\screen.jpg)
+
+Fill the fields as needed:
+
+* The __Directory...__ field is required. `../data` is same directory where you put data files when running the screen from the command line. The webpage offers a little more flexibility, though. If `Desktop` is selected, then it will look for the data file(s) on your desktop. If `Other` is selected, the file(s) can be anywhere, but you will need to specify the full path in the subsequent field.
+* The __Airvision filename__ file is also required. This is the name AirVision export, and it defaults to `BasicDataExportReport.csv`, which is what AirVision wants to call the file by default. Do not put the filename in quotes. If `Other` is selected as the data directory, then the full file path must be input, e.g. `H:\TECH\KARL\R stuff\AdHocGraphics\cdf2015.csv` 
+* Optionally, you can include a __BAM10 digital data filename__ and/or a __BAM25 digital data filename__, if BAM digital data is to be analyzed. These files must be in the same directory as the AirVision export. Do not surround the filename in quotes.
+* The __Comment__ field is optional. As with the other fields, do not use quotes around the comment text.
+* Finally, the `Run screen even on incomplete data` radio button is equivalent to the `ignore=` argument. By default, this is set to "No", so if the screen sees less than a full month of data, it will stop and give an error. Set to "Yes" to override this behavior.
+
+For example, entering `screen()` into the console, and then filling out the pop-up webpage as shown below and then pressing the `Save` button is equivalent to running `screen("AT-2017-01.csv", "AT-2017-01-BAM10.csv", "AT-2017-01-BAM25.csv")`:
+
+![](images\screen1.jpg) 
+
+A limitation to running the screen this way is that the resulting html file is always called `screen.html` and written to `r paste(getwd(), "html", sep="/")`. When run interactively, the screen cannot generate an output filename that is based on the input filename, nor it is possible to specify a custom name. If you wish to save the html file, you will need to manually change the filename by going to File -> Save As in the web browser window.
+
+#### Data Checks
+
+Regardless of whether the console or the webpage is used input the data, `screen()` runs a number of checks on the data files before analyzing them and generating the html output. If it detects any problems, it quits and returns an error to the console without generating the html. For example, if it can't find the data file, either because it doesn't exist or because its name was entered incorrectly, what happens looks like this:
+
+![](images\error.jpg) 
+
+Other things that `screen()` checks:
+
+* Whether data is all from the same month. If several months are detected in the input file(s) an error is produced.
+* Whether a complete month of data is present. As mentioned above, by default if there's less one month of data, an error is produced, but this behavior can be turned off by including `ignore=TRUE` in the call.
+* Whether data is all from the same site. If multiple site are detected, an error is produced.
+* If BAM data is present, whether than BAM ditigal files contain the same number of hours as the AirVision export.
+
+### Other Screens: pollscreen() & metscreen()
+
+Two other screens are avialable, `pollscreen()` and `metscreen()`. These compare pollutant and meteorology data, respectively, to historical data from the same site. The arguments to these functions are the same as for `screen()`, and both analyze BasicDataExport files from AirVision. (BAM digital data files are not analyzed and are therefore not needed.)
+
+So,
+
+```{r, eval=F}
+pollscreen("AT-2017-01.csv")
+```
+
+produces [this](Examples/AT-2017-01-poll.html), and 
+
+```{r, eval=F}
+metscreen("AT-2017-01.csv")
+```
+
+produces [this result](Examples/AT-2017-01-met.html).
+
+As with the `screen()` function, data can also be passed to the screen interactively via a webpage. Simply type `metscreen()` or `pollscreen()` to launch the webpage. 
+
+The naming of the output html file is similar to how `screen()` works: When run from the command line, by default the html file is named after the input file, so "AT-2017-01.csv" becomes `AT-2017-01-poll.html` or `AT-2017-01-met.html`. Alternatively, the argument `html=` can be used to give the output file a custom name. If the webpage interface is used, then file is named `pollscreen.html` or `metscreen.html`.
+
+The `comment=` and `ignore=` options work the same for these functions as they do for `screen()`. The only additional argument is `logscale=`. Note how in the [previous example](Examples/AT-2017-01-poll.html), the BAM data for Atascadero was plotted on the log scale. This is the default handling of BAM data. To have BAM data displayed on the regular, non-log scale, include `logscale=FALSE` (or simply `logscale=F`) in the call:
+
+
+```{r, eval=F}
+pollscreen("AT-2017-01.csv", logscale=FALSE)
+```
+
+or from the webpage, select "No" for the `Plot PM data on log scale?` option. 
+
+These functions also check that the input file is complete and that it contains data for only one site and one month before executing the report.
+
+### Exceedence Report: exceedences()
+
+The function `exceedences()` produces a simple report identifying any exceedences of state and federal standards. 1-hr, 8-hr, and 24-hr standards for ozone, NO2, and particulates are included, but annual standards are not. It also displays summary statistics for each parameter including data completeness and monthly averages, minima, and maxima. `exceedences()` takes the same arguments as the other screens, namely `filename=`, `comment=`, `html=` and `ignore=`, and behaves analogously with regard to how it names the output html file. For example,
+
+
+```{r, eval=F}
+exceedences("AT-2017-01.csv")
+```
+
+produces [this](Examples/AT-2017-01-exceed.html). As with the other screening functions, by default the output html file is named after the input data file; in this example the file is named  `AT-2017-01-exceed.html`. A custom name can be specified with the `html=` argument. The report can also be generated interactively. Enter `exceedences()` into the console to launch the webpage.
+
+### Calibrations and Precision
+#### calibrations()
+
+The function `calibrations()` is intended to simplify creating printable reports of monthly autocals. As noted in the Introduction, previous practice involved generating plots in AirVision, then exporting the images, and then cutting and pasting them into a Word document; `calibrations()` requires only a single AirVision export to produce a similar report. 
+
+To use `calibrations()`, first export the month's calibrations from AirVision using the "Calibration Export" report in AirVision. Export the data as a .csv file. In the following example, March 2016 calibrations for NRP have been exported and saved to a file called [`NRP-2016-03-cals.csv`](Examples\NRP-2016-03-cals.csv). Therefore,
+
+```{r, eval=F}
+calibrations("NRP-2016-03-cals.csv")
+```
+
+produces, [this report](Examples/NRP-2016-03-cals.html) of NRP calibrations. The naming of the output html is the same as for the other screens, and like the other screens, `calibrations()` also accepts the following arguments: `filename=`, `comment=`, and `html=`. The report can also be generated interactively; enter `calibrations()` into the console to launch the webpage. Note that this function does not do quite as much checking of the input file as the other screens.
+
+#### prec(), bamprec(), & bamprec2()
+
+In contrast to the other functions, `prec()`, `bamprec()`, and `bamprec2` are used to generate AQS-uploadable precision strings, rather than to screen data and produce reports. `prec()` generates precision strings for gaseous pollutants (QA transactions of type "1-Point QC"), while `bamprec()` and `bamprec2()` generate strings for BAM flow checks (QA transactions of type  "Flow Rate Verification"). There is no webpage interface for these functions.
+
+To use `prec()`, run an AQS Text Report in AirVision (select the "1-Point QC Data Records (QA)" option), and save the resulting text file to the same directory where data for screens goes (i.e. `r paste(getwd(), "data", sep="/")`). Running `prec()` simply deletes the extraneous rows, converts RP transactions to the new QA format, and also flags any string with a large percent difference between the audit and response concentrations. `prec()`  takes three arguments:
+
+* `filename=`, the name of the AirVision output file to be converted. This file MUST be in the directory noted above.
+* `strings=`, this is an optional name of the file to be generated. Even though it'll be a .txt file, for consistency it will be put in the `...R screen/html` folder, just like the results of the screens.
+* `thresh=`, threshold for flagging. Strings with a percent difference between the response and audit concentrations greater than the threshold will be flagged.
+
+If the `strings=` argument is omitted, then the precision strings file that `prec()` generates will be given the same name as the input file, but it will be written to the `/html` folder.  A default threshold value of 5% is used. Therefore, if the file you are converting is called "AQSReport.txt" (which is AirVision's default filename), then you only need to type:
+
+```{r ex1a, results='hide', message=FALSE}
+prec("AQSReport.txt")
+```
+
+In addition to generating a [file ready for AQS upload](Examples/"AQSReport.txt"), a representation of the output file along with some summary information will also be displayed __on the console__:
+
+```{r ex1b, echo=FALSE, eval=T}
+prec("AQSReport.txt")
+```
+
+In this example, `AQSReport.txt` contained ozone data for March 2017 at Red Hills. The first part is a table shows the strings parsed apart. When there is nothing between a pair of pipes in the output file, "NA" is shown in this section. Only columns V1 through V15 appear in the actual output file. The last two columns of the display show the percent difference between the audit and response concentrations as well as the name of the pollutant; the first column simply indexes the strings. Any strings with a percent difference exceeding the threshold level will have "<---" next the value in column V15. __These "<---" also appear in the output file__, so prior to uploading to AQS, either the entire string will need to be removed or the "<---" will need to be deleted. Another approach to removing any "<---"s is to rerun the screen with a higher value for the `thresh=` argument.
+
+Below this table is some summary information: the total number of strings written, the unique site and parameter codes in the output file, and the earliest and most recent dates in the file. The final line displays the column indices of any strings with percent differences greater than threshold.
+
+The default threshold for flagging is 5%; to use a different threshold use the `thresh=` argument, for example:
+
+```{r ex2, eval=FALSE}
+prec("AQSReport.txt", thresh=15)
+```
+
+Note that in contrast to the other functions described above, `prec()` can handle input files with multiple sites and multiple months of data. In addition to the precision strings, the output file will also contain a few lines of metadata. These lines are start with `##` and are treated as comments by AQS and thus ignored. It is __not__ necessary to remove these lines from the file prior uploading to AQS.
+
+The functions `bamprec()` and `bamprec2()` both generate BAM precision strings and either can be used. `bamprec()` is meant for processing by batch, while `bamprec2()` is intended for generating interactively strings one by one. If only a few strings need to be generated, `bamprec2()` is probably quicker, but if several months of strings need to be generated, then it is probably easier to use `bamprec()`.
+
+The `bamprec()` function converts RP transactions generated by the `BAMprec2.xlsx` workbook into AQS-uploaded QA transactions. It is analogous to `prec()` and takes the same arguments, `filename=`, `strings=`, and `thresh=`. The default input filename for `bamprec()` is `BAM.txt`, and the default output name is `bam_strings.txt`. The default threshold for flagging is 2%.
+
+The `bamprec2()` function offers another way to generate BAM precision strings. Entering `bamprec2()` into the consoles launches an interactive session in the __console__ (rather than a webapge), prompting the user to manually enter information about each flow check. Flow the instructions that appear in the console. The function knows which site/instrument combinations are valid, so if, for example, you try to enter precision information for PM2.5 at NRP, it will respond with an error. To abort the interactive routine, simply press [esc]. 
+
+`bamprec2()` has two optional arguments:
+
+* `stings=`: By default, the output file generated by `bamprec2()` will named `bam_strings2.txt`, but setting this argument specifies a different name for the file.
+* `append=`: If a file already exists with the same output name, it will automatically be overwritten unless `append=TRUE` is included in the call to `bamprec2()`. If `append=TRUE`, then the new strings will be appended to the existing file.
