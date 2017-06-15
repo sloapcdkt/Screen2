@@ -1,9 +1,9 @@
 # Data Screening Tools for San Luis Obispo County APCD
 This repository contains R functions and RMarkdown templates used by the [San Luis Obispo County Air Pollution Control District](http://www.slocleanair.org/) for data screening during validation.
 
-These tools are highly customized to the SLO County APCD situation and are not likely work to in other situations without modification; they presented here for informational/inspirational purposes only.
+These tools are highly customized to the SLO County APCD situation; they are not likely to work in other situations unless modified. They are presented here for informational/inspirational purposes only.
 
-The `manual.html` file contains detailed instructions for how to use the screening tools along with examples. The easiest way view the manaul is to click on the "Clone or download" button, above, and download a zip file of this repository. Unzip the file, and click on `manual.html` to view the manual in your browser.
+The `manual.html` file contains detailed instructions for how to use the screening tools along with examples. The easiest way view the manual is to click on the "Clone or download" button, above, and download a zip file of this repository. Unzip the file, and click on `manual.html` to view the manual in your browser.
 
 ## File Descriptions
 ### The Manual and related files
@@ -37,7 +37,7 @@ This repository should contain all of the code and data needed to reproduce the 
 
 This project depends on the follows packages: `shiny`, `rmarkdown`, and `openair` and `dplyr`. You can easily install them from within RStudio, or they will be installed automatically the first time you try to use the screening tools (see below).
 
-Once the necessary software is installed, download this repository by clicking the "Clone or download" button, above. Unzip the file and double click on `Screen2.Rproj`. This should launch RStudio. Source the `funtions.R` script by either 1) clicking on it in the "Files" pane and then clicking the "Source" button, or 2) entering `source('functions.R')` into the R console. 
+Once the necessary software is installed, download this repository by clicking the "Clone or download" button, above. Unzip the file and double click on `Screen2.Rproj`. This should launch RStudio. Source the `functions.R` script by either 1) clicking on it in RStudio "Files" pane and then clicking the "Source" button, or 2) entering `source('functions.R')` into the R console. 
 
 The script will first check if all of the required packages are installed. Any missing packages will be installed automatically, which may take a few minutes.
 
