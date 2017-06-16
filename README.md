@@ -24,8 +24,7 @@ The `manual.html` file contains detailed instructions for how to use the screeni
 The meteorological and pollutant screens compare data from the current month & year to validated data collected in previous years. To do this, there needs to be an archive of data from earlier years.
 
 * `create-archive.R` Script for creating the needed archive files from an AQS download
-* `arch-atas.csv` Data archive for Atascadero site (used for examples in the manual)
-* `arch-....` Archives for other sites are need for running meteorological and pollutant screens but are **not included** in this repository.
+* `arch-atas.csv` Data archive for the Atascadero site (used for examples in the manual). Archives for other sites are **not included** in this repository, but would be needed for running meteorological and pollutant screens on other sites.
 
 ### Other
 * `README.md` This description/information file
