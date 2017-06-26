@@ -692,14 +692,20 @@ day <- tapply(x$day, paste(x$day, x$invalid), function(s) as.character(s)[[1]])
 invalid <- tapply(x$invalid, paste(x$day, x$invalid), function(s) as.character(s)[[1]])
 
 xx <- data.frame(day, hours, parameter=invalid, first.hour)
-xx <- xx[order(xx$day, xx$first.hour), c("day", "hours", "parameter")]
+if(nrow(xx) != 0){
+  xx <- xx[order(xx$day, xx$first.hour), c("day", "hours", "parameter")]
+}
+
 
 # report final data
-cat("Note: Autocals are not included in table, below. \n")
-cat("\n")
-cat("\n")
-print(xx, row.names = FALSE)
-
+if(nrow(xx) != 0) {
+  cat("Note: Autocals are not included in table, below. \n")
+  cat("\n")
+  cat("\n")
+  print(xx, row.names = FALSE)
+} else {
+  cat("No missing data, other than autocals.")
+}
 ```
 
 
