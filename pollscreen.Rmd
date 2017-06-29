@@ -6,7 +6,7 @@ output:
 params:
   directory:
     label: "Directory to look for data files:"
-    value: "H: drive"
+    value: "Desktop"
     input: radio
     choiceNames: ["../data", "Desktop", "Other - must specify full path in filename, below"]
     choiceValues: ["H: drive", "Desktop", "Other"]
