@@ -41,6 +41,7 @@ screen<-function(filename=NULL, bam10="", bam25="",
   
     rmarkdown::render("screen.Rmd", output_file=html, envir = new.env(), quiet = TRUE,
                     params = list(filename = filename,
+                                  directory = "H: drive",
                                   bam10 = bam10,
                                   bam25 = bam25,
                                   comment = comment,
@@ -72,6 +73,7 @@ metscreen<-function(filename=NULL, comment="", html=NULL, ignore=F){
     }
     rmarkdown::render("metscreen.Rmd", output_file=html, envir = new.env(), quiet = TRUE,
                       params = list(filename = filename,
+                                    directory = "H: drive",
                                     comment = "",
                                     ignore = FALSE))
     shell.exec(paste(getwd(),html, sep="/"))
@@ -100,6 +102,7 @@ pollscreen<-function(filename=NULL, logscale=TRUE, comment="",
     }
     rmarkdown::render("pollscreen.Rmd", output_file=html, envir = new.env(), quiet = TRUE,
                       params = list(filename = filename,
+                                    directory = "H: drive",
                                     logscale=logscale,
                                     comment = "",
                                     ignore = FALSE))
@@ -128,6 +131,7 @@ exceedences<-function(filename=NULL, comment="", html=NULL, ignore=F){
     }
     rmarkdown::render("exceedences.Rmd", output_file=html, envir = new.env(), quiet = TRUE,
                       params = list(filename = filename,
+                                    directory = "H: drive",
                                     comment = "",
                                     ignore = FALSE))
     shell.exec(paste(getwd(),html, sep="/"))
@@ -156,6 +160,7 @@ calibrations<-function(filename=NULL, comment="", html=NULL){
     }
     rmarkdown::render("calibrations.Rmd", output_file=html, envir = new.env(), quiet = TRUE,
                       params = list(filename = filename,
+                                    directory = "H: drive",
                                     comment = ""))
     shell.exec(paste(getwd(),html, sep="/"))
   }
