@@ -393,13 +393,13 @@ bamprec2<-function(strings = "bam_strings2.txt", append=FALSE){
   
   #are there more strings?
   cat("\n")
-  more<-tolower(readline(prompt="Enter another record? (y or n) "))
+  more<-tolower(readline(prompt="Press [enter] to enter another record or any letter to finish. "))
   date<-""
   cat("\n")
   
   # for additional strings....  
   
-  while(more=="y"){
+  while(more==""){
     newsite <- readline(prompt=paste0("Current AQS site code is ", site, 
                                       ". Press [enter] to accept or enter a new site code. "))
     if(newsite != "") {
@@ -479,7 +479,7 @@ bamprec2<-function(strings = "bam_strings2.txt", append=FALSE){
     
     #are there more strings?
     cat("\n")
-    more<-tolower(readline(prompt="Enter another record? (y or n) "))
+    more<-tolower(readline(prompt="Press [enter] to enter another record or any letter to finish. "))
     date<-""
     cat("\n")
   }
