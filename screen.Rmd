@@ -694,13 +694,13 @@ invalid <- tapply(x$invalid, paste(x$day, x$invalid), function(s) as.character(s
 xx <- data.frame(day, hours, parameter=invalid, first.hour)
 if(nrow(xx) != 0){
   xx <- xx[order(xx$day, xx$first.hour), c("day", "hours", "parameter")]
+  names(xx)[3] <- "parameter(s)"
 }
 
 
 # report final data
 if(nrow(xx) != 0) {
   cat("Note: Autocals are not included in table, below. \n")
-  cat("\n")
   cat("\n")
   print(xx, row.names = FALSE)
 } else {
