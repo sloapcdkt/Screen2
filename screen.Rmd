@@ -1,0 +1,727 @@
+---
+output:
+  html_document:
+    theme: cerulean
+params:
+  directory:
+    label: "Directory to look for data files:"
+    value: "Desktop"
+    input: radio
+    choiceNames: ["../data", "Desktop", "Other - must specify full path in filename, below"]
+    choiceValues: ["H: drive", "Desktop", "Other"]
+  filename: 
+    label: "AirVision filename:" 
+    value: "BasicDataExportReport.csv"
+  bam10:
+    label: "BAM10 digital data filename (leave blank if none):"
+    value: ""
+  bam25:
+    label: "BAM25 digital data filename (leave blank if none):"
+    value: ""
+  comment: 
+    label: "Comment (optional):"
+    value: ""
+  ignore:
+    label: "Run screen even on incomplete data?"
+    value: FALSE
+    input: radio
+    choiceNames: ["Yes", "No"]
+    choiceValues: [TRUE, FALSE]  
+---
+
+```{r global_options, echo=FALSE}
+
+#for testing: dir <- "H: drive"; filename <- "AT-2017-01.csv"; bam10 <- "AT-2017-01-BAM10.csv"; bam25 <- "AT-2017-01-BAM25.csv"; comment <- ""; ignore <- FALSE
+
+#for testing: screen("AT-2017-01.csv", "AT-2017-01-BAM10.csv", "AT-2017-01-BAM25.csv")
+
+knitr::opts_knit$set(width=90)
+knitr::opts_chunk$set(comment="", fig.width=8, fig.height = 5, echo = FALSE, 
+                      warning=FALSE, message=FALSE  )
+
+filename <- params$filename
+comment <- params$comment
+
+dir <- params$directory
+if(dir == "H: drive") dir <- paste0(getwd(), "/data/")
+if(dir == "Desktop") {
+  path <- strsplit(path.expand("~"), "/")[[1]]
+  path <- path[1:(length(path)-1)]
+  path <- paste(path, collapse = "/")
+  dir <- paste(path, "Desktop/", sep = "/")
+} 
+if(dir == "Other") {
+  path <- strsplit(filename,"\\", fixed = TRUE)[[1]]
+  dir <- paste0(path[-length(path)], collapse = "/")
+  dir <- paste0(dir, "/")
+  filename <- path[length(path)]
+  rm(path)
+} 
+
+bam10 <- params$bam10
+bam25 <- params$bam25
+run10 <- if(bam10 == "") FALSE else TRUE
+run25<- if(bam25 == "") FALSE else TRUE
+
+```
+
+
+```{r}
+
+## Check inputs:
+
+# check AirVision file is present
+if(!filename %in% list.files(dir)) {
+  stop(paste0("File ", filename, " not found in ", dir, "."), call. = FALSE)
+} 
+
+# read file
+d <- read.table(paste0(dir, filename), colClasses="character", header=F, sep=",")
+  
+# check for multiple sites
+site <- unique(unlist(d[1,-1]))
+if(length(site)!=1) {
+  stop("Multiple site codes are present in file. Only one site is allowed.", call. = FALSE)
+}
+
+#check date range
+dates<-as.POSIXct(d[-c(1:3),1], tz="UTC", format="%d-%b-%Y %H:%M")
+month<-unique(format(dates, "%B"))
+if(length(month)!=1) {stop ("All data must be from the same month.")}
+  
+#check for complete month of data:
+if( month %in% month.name[c(1,3,5,7,8,10,12)] ){
+   if(nrow(d)!=744+3 & ignore==F) stop("Month is incomplete. Set 'ignore=T' to run anyway.", call. = FALSE)
+}
+  
+if( month == "February" ){
+   if( nrow(d)!=672+3 & nrow(d)!=696+3 & ignore==F) {
+     stop("Month is incomplete. Set 'ignore=T' to run anyway.", call. = FALSE)
+   } 
+}
+  
+if( month %in% month.name[c(4,6,9,11)] ){
+  if(nrow(d)!=720+3 & ignore==F) stop("Month is incomplete. Set 'ignore=T' to run anyway.", call. = FALSE)
+}
+  
+  
+# are we going to run the bamscreen?.
+vars <- tolower(d[2,])
+  
+if (sum(c("bam10", "pm10_contin") %in% vars)>0 & run10){
+    
+  #check for files..., write 'em
+  if(!bam10 %in% list.files(dir)) {
+    stop(paste0("File ", bam10, " not found in ", dir,"."), call. = FALSE)
+  }
+    
+  #check if data missing
+  bam10<-read.csv(paste0(dir, bam10), stringsAsFactors = FALSE)
+  if(nrow(d)-3 != nrow(bam10)) { 
+    stop(paste(params$bam10, "and", filename, "do not have the same number of rows."), call. = FALSE) 
+  }
+}
+  
+if (sum(c("bam25", "pm25") %in% vars)>0 & run25){
+    
+  if(!bam25 %in% list.files(dir)) {
+    stop(paste0("File ", bam25, " not found in ", dir,"."), call. = FALSE)
+    }
+    
+  bam25 <- read.csv(paste0(dir, bam25), stringsAsFactors = FALSE)
+  if(nrow(d)-3 != nrow(bam25)) { 
+    stop(paste(params$bam25, "and", filename, "do not have the same number of rows."), call. = FALSE) 
+    }
+}
+
+
+##format data
+d <- d[-1, ] # get rid of site names header row...
+if(("atm" %in% vars)==TRUE) {vars[match("atm", vars)] <- "amt"}
+if(("ambtemp" %in% vars)==TRUE) {vars[match("ambtemp", vars)] <- "amt"}
+if(("ozone" %in% vars)==TRUE) {vars[match("ozone", vars)] <- "o3"}
+if(("pm10_contin" %in% vars)==TRUE) {vars[match("pm10_contin", vars)] <- "bam10"}
+if(("pm10_std" %in% vars)==TRUE) {vars[match("pm10_std", vars)] <- "bam10std"}
+if(("stm" %in% vars)==TRUE) {vars[match("stm", vars)] <- "rmt"}
+if(("sigtheta" %in% vars)==TRUE) {vars[match("sigtheta", vars)] <- "sigt"}
+if(("vwsp" %in% vars)==TRUE) {vars[match("vwsp", vars)] <- "wsv"}
+if(("vwdr" %in% vars)==TRUE) {vars[match("vwdr", vars)] <- "wdv"}
+
+vars[1] <- "date"
+names(d) <- vars
+d <- d[-c(1,2),]
+n.param <- length(vars)
+d[,2:n.param] <- apply(d[,2:n.param], 2, as.numeric)
+d$date <- dates
+
+```
+
+# Data Screen for `r site`, `r format(d$date[1], "%B %Y")`.
+
+`r comment`
+
+## Data Summary
+```{r}
+Minimum<- apply(d[,2:n.param], 2, min, na.rm=T )
+Maximum<-apply(d[,2:n.param], 2, max, na.rm=T )
+Average<-round(apply(d[,2:n.param], 2, mean, na.rm=T), 1)
+Missing<-apply(d[,2:n.param], 2, function(x) sum(is.na(x)) )
+Completeness<-trunc(100-100*Missing/dim(d)[1],0)
+
+cbind(Minimum, Maximum, Average, Missing, Completeness)
+rm(Minimum, Maximum, Average, Missing, Completeness)
+```
+
+## Raw data flagging
+```{r}
+
+#reformat dates for printing...
+d$date<-format(d$date, "%D:%H") 
+
+#remove bam10std
+if(("bam10std" %in% names(d))==TRUE){
+  id<-which(names(d)=="bam10std")
+  d<-d[, -id]
+}
+
+
+#limits (idea: allow user-supplied alternatives )
+limits<-data.frame(amt=c(-5,40),
+                   bam10=c(-4,900),
+                   bam10std=c(-4,900),
+                   bam25=c(-5,900),
+                   no=c(0, 100),
+                   no2=c(0,50),
+                   nox=c(0,100),
+                   o3=c(0,64),
+                   so2=c(0,10),
+                   sigt=c(0,109),
+                   wdv=c(0,359),
+                   wsv=c(0,35))
+
+
+#function to pick out hi/lo hours
+hi<-function(col){
+  id<-which(d[,col]>limits[2,col])
+  if(length(id)>0){
+    cat(paste("Observation(s) when ", col, " exceeds ", limits[2,col],":", sep=""))
+    cat("\n")
+    print(d[id,], row.names=FALSE)
+    cat("\n")
+  }
+}
+
+lo<-function(col){
+  id<-which(d[,col]<limits[1,col])
+  if(length(id)>0){
+    cat(paste("Observation(s) when ", col, " is under ", limits[1,col],":", sep=""))
+    cat("\n")
+    print(d[id,], row.names=FALSE)
+    cat("\n")
+  }
+}
+
+##apply functions in loop to identify and print hours over/under limits
+
+for (i in names(d)[-1]){
+  hi(i)
+}
+
+for(i in names(d)[-1]){
+  lo(i)
+}
+
+##identify hours when no/no2/nox not all missing or all present
+
+if(("no" %in% names(d))==TRUE){
+  cat(paste("Hours with partial NOx/NO/NO2 data:"))
+  cat("\n")
+  id<-which(is.na(d$no)+is.na(d$nox)+is.na(d$no2)==1|
+            is.na(d$no)+is.na(d$nox)+is.na(d$no2)==2)
+  if(length(id)>0){
+    print(d[id,], row.names=FALSE)
+    cat("\n")
+  } else {
+    cat("None.")
+  }
+}
+
+##identify hours when no+no2 /= nox
+
+if(("no" %in% names(d))==TRUE){
+  cat(paste("Hours when NO + NO2 does not equal NOx:"))
+  cat("\n")
+  id<-which(abs(d$nox-d$no-d$no2)>1)
+  if(length(id)>0){
+    print(d[id,], row.names=FALSE)
+    cat("\n")
+  } else {
+    cat("None.")
+  }
+}
+
+## if WSV > 8, sigt should be < 40
+if(("sigt" %in% names(d))==TRUE & ("wsv" %in% names(d)==TRUE)){
+  cat(paste("Hours when WSV is greater than 8 and sigt is greater than 40:"))
+  cat("\n")
+  id<-which(d$wsv > 8 & d$sigt > 40)
+  if(length(id)>0){
+    print(d[id,], row.names=FALSE)
+    cat("\n") 
+  } else {
+    cat("None.")
+  }
+
+}
+
+##bam25 > bam10
+
+if(("bam25" %in% names(d))==TRUE & ("bam10" %in% names(d)==TRUE)){
+  cat(paste("Hours when BAM2.5 is more than 5 ug/m3 greater than BAM10:"))
+  cat("\n")
+  id<-which(d$bam25 > d$bam10+5)
+  if(length(id)>0){
+    print(d[id,], row.names=FALSE)
+    cat("\n")
+  } else {
+  cat("None.")
+  }
+}
+
+```
+
+-----
+
+## Station Temperature
+```{r}
+
+##RMT analysis
+
+if("rmt" %in% names(d)==TRUE){
+
+  par(mfrow=c(1,1), mar=c(5,4,4,4)+0.1)
+  plot(tapply(d$rmt, as.factor(format(dates, "%d")), max, na.rm=T), type="l",
+     xlim=c(1,31), ylim=c(0,45),
+     lwd=2, col="red", cex=0.8, 
+     ylab="Hourly Temperature, C",
+     xlab="Day of Month",
+     main=paste("RMT Control Chart for", site ))
+
+  abline(h=seq(from=0, to=45, by=5), lty=3, col="grey")
+  abline(v=seq(from=0, to=45, by=5), lty=3, col="grey")
+
+  lines(tapply(d$rmt, as.factor(format(dates, "%d")), min, na.rm=T),
+     col="blue", lwd=2)
+
+  lines(tapply(d$rmt, as.factor(format(dates, "%d")), mean, na.rm=T),
+      col="black", lwd=2)
+
+  lines(10*tapply(d$rmt, as.factor(format(dates, "%d")), sd, na.rm=T),
+      col="black", lty=2, lwd=2)
+
+  axis(side=4, at=c(0,10,20,30,40), labels=c(0,10,20,30,40)/10)
+  mtext(text="Standard Deviation of Hourly Temperature, C", side=4, padj=3)
+
+  legend("topleft", c("Max.", "Average", "Min.", "Std. Dev."), lty=c(1,1,1,2) , lwd=2, bg="white",
+         col=c(2,1,"blue", 1), horiz=T)
+
+} else {cat("No Station Temp Data to Analyze.") }
+```
+
+------
+
+## BAM Screen
+
+```{r}
+##load, format BAM data
+if(run10){
+  #filename <- paste0(dir, bam10)
+  #bam10 <- read.csv(filename, stringsAsFactors = FALSE)
+  bam10 <- bam10[,-c(4:6,22)]
+  names(bam10) <- lapply(strsplit(names(bam10), split=".", fixed="TRUE"), 
+                         function(s) s[[1]]) #simplify names
+  names(bam10) <- tolower(names(bam10))
+  names(bam10)[1] <- "date"
+  bam10$conc <- bam10$conc*1000
+}
+ 
+if(run25){
+  #filename <- paste0(dir, bam25)
+  #bam25 <- read.csv(filename, stringsAsFactors = FALSE)
+  bam25 <- bam25[,-c(4:6,22)]
+  names(bam25) <- lapply(strsplit(names(bam25), split=".", fixed="TRUE"), function(s) s[[1]]) #simply names
+  names(bam25) <- tolower(names(bam25))
+  names(bam25)[1] <- "date"
+  bam25$conc <- bam25$conc*1000
+}
+
+#if there are no bams... 
+if(!run10 & !run25 ) {
+  cat("No BAM data to analyze.")
+}  
+
+```
+
+
+```{r}
+
+### Comparison of BAM10 digital data vs analog values logged by 8832
+
+if(run10){
+  cat(toupper("Comparison of BAM10 digital data vs analog values logged by 8832:\n\n"))
+  cat(paste("Maximum difference:", max(d$bam10-bam10$conc, na.rm=TRUE), "ug/m3\n"))
+  cat(paste("Minimum difference:", min(d$bam10-bam10$conc, na.rm=TRUE), "ug/m3\n"))
+  cat(paste("Average difference:", round(mean(d$bam10-bam10$conc, na.rm=TRUE),2), "ug/m3\n"))
+  cat(paste("(Difference defined as analog - ditigal value.)\n \n"))
+  
+  if(max(abs(d$bam10-bam10$conc), na.rm=TRUE)>1){
+    cat("Observations when the absolute difference exceeds 1.0:\n")
+    print(data.frame(date=d$date, bam10[,-1],AV.conc=d$bam10)[which((abs(d$bam10-bam10$conc))>1), ])
+  }
+  
+  par(mfrow=c(1,2))
+  hist(d$bam10-bam10$conc,
+       main="Histogram of \n differences",
+       xlab="BAM10 analog - BAM10 digital")
+  plot(d$bam10, d$bam10-bam10$conc, 
+            pch= 15, cex=3, col=rgb(0.2, 0.2, 0.2,0.15),
+            main="Scatter Plot of Differences", xlab="BAM10 analog",
+            ylab="BAM10 analog - BAM10 digital")
+}
+
+```
+
+
+```{r}
+### Comparison of BAM25 digital data vs analog values logged by 8832
+if(run25){
+  cat(toupper("Comparison of BAM25 digital data vs analog values logged by 8832:\n\n"))
+  cat(paste("Maximum difference:", max(d$bam25-bam25$conc, na.rm=TRUE), "ug/m3\n"))
+  cat(paste("Minimum difference:", min(d$bam25-bam25$conc, na.rm=TRUE), "ug/m3\n"))
+  cat(paste("Average difference:", round(mean(d$bam25-bam25$conc, na.rm=TRUE),2), "ug/m3\n"))
+  cat(paste("(Difference defined as analog - ditigal value.)\n \n"))
+  
+  if(max(abs(d$bam25-bam25$conc), na.rm=TRUE)>1){
+    cat("Observations when the absolute difference exceeds 1.0:\n")
+    print(data.frame(date=d$date,bam25[,-1],AV.conc=d$bam25)[which(abs(d$bam25-bam25$conc)>1), ])
+  }
+  
+  par(mfrow=c(1,2))
+  hist(d$bam25-bam25$conc,
+       main="Histogram of \n differences",
+       xlab="BAM25 analog - BAM25 digital")
+  plot(d$bam25, d$bam25 - bam25$conc, 
+            pch= 15, cex=3, col=rgb(0.2, 0.2, 0.2,0.15),
+            main="Scatter Plot of Differences", xlab="BAM25 analog",
+            ylab="BAM25 analog - BAM25 digital")
+}
+
+```
+
+
+```{r}
+### Ambient Temperature Comparison
+
+if(run10 | run25) {
+  plot(dates, d$amt, type="l",
+     ylim=c(range(d$amt, na.rm=T)[1]-8,range(d$amt, na.rm=T)[2]+2),
+     xlab="", ylab="Hourly Temperature, C",
+     main= "Comparison of Ambient Temperatures recorded \n by BAM(s) and Met Tower")
+  abline(h=seq(-10, 40, by=5), lty=3, col="gray")
+  if(run10) {lines(dates, bam10$at, col=2)}
+  if(run25) {lines(dates, bam25$at, col="blue")}
+  legend("bottomleft", legend=c("amt", "bam10 temp", "bam25 temp"), 
+        col=c(1,2, "blue"), lty=1, horiz=T)
+}  
+
+if(run10 & run25) {
+  hist(bam10$at-bam25$at, main = "Histogram of differences \nin BAM digital temperature",
+       xlab="BAM10 temp minus BAM2.5 temp, C")
+}  
+
+
+
+```
+
+
+
+```{r}
+
+# BAM10 first...
+if(run10){
+  
+  ##paste dig flags together to save space, then add RMT
+  bam10$flags<-with(bam10, paste(e,u,m,i,l,r," ",n,f,p,d,c,t, sep=""))
+  bam10<-data.frame(date=d$date, BAM=bam10$conc, AV=d$bam10, 
+                    qtot=bam10$qtot, rh=bam10$rh, at=bam10$at,
+                    eumilr_nfpdct=bam10$flags, rmt=d$rmt)
+  
+  cat("BAM10 DIGITAL DATA SCREEN:\n \n")
+  
+  ##identify hours qtot is not between 0.793 and 0.875
+  id<-which(bam10$qtot>0.875 | bam10$qtot<0.793)
+  if(length(id)>0){
+    cat(paste("Qtot out of range (+/- 5%: >0.875 or <0.793:)"))
+    cat("\n")
+    print(bam10[id,], row.names=FALSE)
+    cat("\n")
+  }
+  
+  ##identify hours where internal RH is <5 or more than 35%
+  id<-which(bam10$rh<5 | bam10$rh>35)
+  if(length(id)>0){
+    cat(paste("Internal RH not between 5% and 35%:"))
+    cat("\n")
+    print(bam10[id,],row.names=FALSE)
+    cat("\n")
+  }
+  
+  ##identify hours with bam flags
+  id<-which(bam10$eumilr_nfpdct!="000000 000000")
+  if(length(id)>0){
+    cat(paste("BAM digital flags:"))
+    cat("\n")
+    print(bam10[id,], row.names=FALSE)
+    cat("\n")
+  } 
+  
+  ##identify hours when AV is invalid but BAM is not
+  id<-which(bam10$BAM!=985 & is.na(bam10$AV)==T)
+  if(length(id)>0){
+    cat(paste("Airvision value is invalid but BAM digital is not:"))
+    cat("\n")
+    print(bam10[id,], row.names=FALSE)
+    cat("\n")
+  } 
+
+  
+}
+
+```
+
+
+```{r}
+
+# BAM25...
+
+if(run25){
+  
+  ##paste dig flags together to save space, then add RMT
+  bam25$flags<-with(bam25, paste(e,u,m,i,l,r," ",n,f,p,d,c,t, sep=""))
+  bam25<-data.frame(date=d$date, BAM=bam25$conc, AV=d$bam25, 
+                    qtot=bam25$qtot, rh=bam25$rh, at=bam25$at,
+                    eumilr_nfpdct=bam25$flags, rmt=d$rmt)
+  
+  cat("BAM25 DIGITAL DATA SCREEN:\n \n")
+  
+  ##identify hours qtot is not between 0.83 and 0.837
+
+  id<-which(bam25$qtot<0.665 | bam25$qtot>0.735)
+  if(length(id)>0){
+    cat(paste("Qtot out of range (+/- 5%: <0.665 or >0.735:)"))
+    cat("\n")
+    print(bam25[id,], row.names=FALSE)
+    cat("\n")
+  } 
+
+##identify hours where internal RH is <5 or more than 35%
+
+  id<-which(bam25$rh<5 | bam25$rh>35)
+  if(length(id)>0){
+    cat(paste("Internal RH not between 5% and 35%:"))
+    cat("\n")
+    print(bam25[id,], row.names=FALSE)
+    cat("\n")
+  } 
+
+##identify hours with bam flags
+
+  id<-which(bam25$eumilr_nfpdct!="000000 000000")
+  if(length(id)>0){
+    cat(paste("BAM digital flags:"))
+    cat("\n")
+    print(bam25[id,], row.names=FALSE)
+    cat("\n")
+  } 
+
+  ##identify hours when AV is invalid but BAM is not
+  id<-which(bam25$BAM!=985 & is.na(bam25$AV)==T)
+  if(length(id)>0){
+    cat(paste("Airvision value is invalid but BAM digital is not:"))
+    cat("\n")
+    print(bam25[id,], row.names=FALSE)
+    cat("\n")
+  }
+
+}
+
+```
+
+
+-----
+
+## Top 3 Hour Report
+
+```{r}
+######################
+##pick out top 3 daily values each month
+
+# what paramters do we care about?
+polls <- intersect( names(d), c("amt", "bam10",  "bam25", "no", "no2", "nox", "o3", "so2", "wsv", "vwsp"))
+
+# split into list of daily data.frames
+x <- split(d, format(dates, "%Y-%m-%d"))
+
+# for each parameter: 
+for(j in polls){
+  xj <- lapply(x, function(s) s[which.max(s[, j]), ]) # for each day id highest value and datetime
+  xj <- do.call("rbind", xj) # create df of just daily maxima
+  xj <- xj[order(xj[, j], decreasing= TRUE), ][1:3, c("date", j)] # get the top 3
+  xj$check <- "    _______"
+  rownames(xj) <-1:3 
+  assign(j, xj) 
+}
+
+# print results:
+for(i in polls) {
+  print(get(i)) 
+  cat("\n")
+}
+
+```
+
+
+-----
+## Missing Data Summary
+```{r, collapse = TRUE}
+######################
+## figure out missing data for comparison with errata
+######################
+
+d$date <- dates
+d$hour <- as.numeric(format(d$date, "%H"))
+d$day <- format(d$date, "%d")
+
+## need to ignore autocals, so fill in holes from autocals with fake data
+gases <- intersect(c("o3", "no", "nox", "no2", "so2"), vars)
+
+if(length(gases) != 0){
+  
+  if (site == "Atascadero") {  # autocals happen at 11pm in ATAS
+  d[d$hour == 23, gases] <- -999
+  } else {                    
+  d[d$hour == 4, gases] <- -999# autocals happen at 4am everywhere else
+  }
+  
+}
+
+## just days with missing data
+missing <- d[!complete.cases(d), ]
+ 
+## for each hour with missing data, identifies which parameters are missing
+idNA <- function(x){
+  NAvars <- names(x)[sapply(x, is.na)]
+  NAvars <- paste0(NAvars, collapse = " ")
+  return(NAvars)
+}
+
+missingVars <- apply(missing, 1, idNA)
+
+# new data frame: 1 hour each row, columns for day hours and missing parameter
+x <- data.frame(day=missing$day, hour=missing$hour, invalid=missingVars)
+
+# if several hours of the same parameter(s) are missing in the same day, collapse to a single
+# row with several hours
+
+# function to for Converting sets of integers into ranges:
+set2range <- function(set){
+  
+  # this assumes that set is ordered from low to high:
+  # (also assumes no repeats, but...)
+  set <- sort(set)
+  
+  # if less than 3 members in set, there's no possible simplification:
+  rtn <- paste(set, collapse = ", ")
+  n <- length(set)
+  if(n < 3) return(rtn)
+  
+  # if n = 3 or more:
+  rtn <- vector(mode = "character")
+  while(length(set) > 2){
+    n <- length(set)
+    diff <- set[2:n] - set[1:(n-1)]
+    
+    if(sum(diff == 1) == 0){
+      rtn <- c(rtn, paste(set, collapse = ", "))
+      set <- vector()
+    } else {
+      
+      if(diff[1] != 1) {
+        rtn <- c(rtn, set[1])
+        temp <- set[-1]
+      } 
+      
+      if(diff[1] == 1 & diff[2] != 1){
+        rtn <- c(rtn, set[1], set[2])
+        temp <- set[-c(1,2)]
+      }
+      
+      if(diff[1] == 1 & diff[2] == 1){
+        eor <- ifelse(sum(diff) == length(diff), length(diff)+1, which(diff!=1)[1]) 
+        rtn <- c(rtn, paste(set[1], "to", set[eor]))
+        temp <- set[-c(1:eor)]
+      }
+      set <- temp
+    }
+  }
+
+if(length(set) !=0 ){
+  rtn <- c(rtn, paste(set, collapse = ", ")) 
+}  
+ 
+rtn <- paste0(rtn, collapse = ", ")
+return(rtn)  
+}
+
+
+hours <- tapply(x$hour, paste(x$day, x$invalid), function(s) s)
+first.hour <- sapply(hours, function(s) s[1]) # for proper sorting later
+hours <- sapply(hours, set2range)
+
+day <- tapply(x$day, paste(x$day, x$invalid), function(s) as.character(s)[[1]])
+invalid <- tapply(x$invalid, paste(x$day, x$invalid), function(s) as.character(s)[[1]])
+
+xx <- data.frame(day, hours, parameter=invalid, first.hour)
+if(nrow(xx) != 0){
+  xx <- xx[order(xx$day, xx$first.hour), c("day", "hours", "parameter")]
+  names(xx)[3] <- "parameter(s)"
+}
+
+
+# report final data
+if(nrow(xx) != 0) {
+  cat("Note: Autocals are not included in table, below. \n")
+  cat("\n")
+  print(xx, row.names = FALSE)
+} else {
+  cat("No missing data, other than autocals.")
+}
+```
+
+
+## Session Info
+```{r, collapse = TRUE}
+## generate list of files used, session info...
+raw <- paste0(dir, filename)
+bam10 <- paste0(dir, params$bam10)
+bam25 <- paste0(dir, params$bam25)
+
+cat("Report generated:", date(), "\n")
+cat("Raw data files: \n")
+cat("   ", raw)
+if(run10) cat("   ", bam10, "\n")
+if(run25) cat("   ", bam25, "\n")
+```
+
+
+Reviewed by (signature/date): ____________________
