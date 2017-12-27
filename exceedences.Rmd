@@ -129,7 +129,7 @@ cbind(Minimum, Maximum, Average, Missing, Completeness)
 ```
 ------
 
-### Exceedence Summary
+### Exceedence Summary (Unofficial)
 ```{r,echo=FALSE, warning=FALSE, message=FALSE, comment="", collapse = TRUE}
 
 #8-hour ozone stanard
