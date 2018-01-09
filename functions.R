@@ -139,6 +139,60 @@ exceedences<-function(filename=NULL, comment="", html=NULL, ignore=F){
   
 }
 
+#####################
+## Run all at once ##
+#####################
+
+# only BasicDataExportReport.csv on Desktop allowed
+# BAM screens not tested.
+
+allscreens <- function(filename=NULL, bam10="", bam25="",
+                       comment="", ignore=FALSE, logscale=TRUE){
+    
+  # Only accept default filename and location, for now
+  if(!is.null(filename)) {stop("Only default filename and location are allowed.")}
+  
+  html <- NULL
+  dir <- paste0(getwd(), "/html")
+  
+  # Run and launch screens:
+  rmarkdown::render("screen.Rmd", output_file=html, output_dir = dir, envir = new.env(), quiet = TRUE,
+                    params = list(filename = "BasicDataExportReport.csv",
+                                  directory = "Desktop",
+                                  bam10 = bam10,
+                                  bam25 = bam25,
+                                  comment = comment,
+                                  ignore = ignore))
+  
+  shell.exec(paste(getwd(), "html/screen.html", sep="/"))
+  
+  rmarkdown::render("pollscreen.Rmd", output_file=html, output_dir = dir, envir = new.env(), quiet = TRUE,
+                    params = list(filename = "BasicDataExportReport.csv",
+                                  directory = "Desktop",
+                                  comment = comment,
+                                  ignore = ignore,
+                                  logscale = logscale))
+  
+  shell.exec(paste(getwd(), "html/pollscreen.html", sep="/"))
+  
+  rmarkdown::render("metscreen.Rmd", output_file=html, output_dir = dir, envir = new.env(), quiet = TRUE,
+                    params = list(filename = "BasicDataExportReport.csv",
+                                  directory = "Desktop",
+                                  comment = comment,
+                                  ignore = ignore))
+  
+  shell.exec(paste(getwd(), "html/metscreen.html", sep="/"))
+  
+  rmarkdown::render("exceedences.Rmd", output_file=html, output_dir = dir, envir = new.env(), quiet = TRUE,
+                    params = list(filename = "BasicDataExportReport.csv",
+                                  directory = "Desktop",
+                                  comment = comment,
+                                  ignore = ignore))
+  
+  shell.exec(paste(getwd(), "html/exceedences.html", sep="/"))
+}
+
+
 #################
 ## calibration ##
 #################
