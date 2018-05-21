@@ -5,7 +5,8 @@
 
 ##load data from 2005-2014, clean up
 #AQS Query: AMP501, O6 079, ALL 1 hour data, 2005 01 01 to 2016 12 31
-arch<-read.table("AMP501_1547329-0.txt", sep = "|") # load AQS data dump (AMP501)
+unzip("AMP501_1647566.zip", list = TRUE)
+arch<-read.table(unzip("AMP501_1647566.zip")[1], sep = "|") # load AQS data dump (AMP501)
 arch<-arch[,-c(1:4, 8, 14:28)]                # remove unwanted columns
 names(arch)<-c("site", "param", "poc", "unit", "method", "date", "time", "value")
 arch<-arch[-which(arch$param==81102),]     # get rid of pm10std
