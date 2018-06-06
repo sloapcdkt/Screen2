@@ -38,6 +38,7 @@ params:
 knitr::opts_knit$set(width=90)
 knitr::opts_chunk$set(comment="", fig.width=8, fig.height = 5, echo = FALSE, 
                       warning=FALSE, message=FALSE  )
+options("max.print" = 10000)
 
 filename <- params$filename
 comment <- params$comment
@@ -335,19 +336,27 @@ if("rmt" %in% names(d)==TRUE){
 ```{r}
 ##load, format BAM data
 if(run10){
-  #filename <- paste0(dir, bam10)
-  #bam10 <- read.csv(filename, stringsAsFactors = FALSE)
-  bam10 <- bam10[,-c(4:6,22)]
+
+  # new way, to fix changing columns from BAM DL
+  names(bam10) <- tolower(names(bam10))
+  bam10 <- bam10[, c("time", "conc.mg.m3.", "qtot.m3.", "rh...", "at.c.",
+                     "e", "u", "m", "i", "l", "r", "n", "f", "p", "d", "c", "t")]
   names(bam10) <- lapply(strsplit(names(bam10), split=".", fixed="TRUE"), 
                          function(s) s[[1]]) #simplify names
-  names(bam10) <- tolower(names(bam10))
   names(bam10)[1] <- "date"
   bam10$conc <- bam10$conc*1000
+  
+  #original way
+  #bam10 <- bam10[,-c(4:6,22)]
+  #names(bam10) <- lapply(strsplit(names(bam10), split=".", fixed="TRUE"), 
+  #                       function(s) s[[1]]) #simplify names
+  #names(bam10) <- tolower(names(bam10))
+  #names(bam10)[1] <- "date"
+  #bam10$conc <- bam10$conc*1000
 }
  
 if(run25){
-  #filename <- paste0(dir, bam25)
-  #bam25 <- read.csv(filename, stringsAsFactors = FALSE)
+
   bam25 <- bam25[,-c(4:6,22)]
   names(bam25) <- lapply(strsplit(names(bam25), split=".", fixed="TRUE"), function(s) s[[1]]) #simply names
   names(bam25) <- tolower(names(bam25))
