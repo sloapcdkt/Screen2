@@ -618,8 +618,15 @@ if(length(gases) != 0){
   
   if (site == "Atascadero") {  # autocals happen at 11pm in ATAS
   d[d$hour == 23, gases] <- -999
-  } else {                    
-  d[d$hour == 4, gases] <- -999# autocals happen at 4am everywhere else
+  #} else {                    
+  #d[d$hour == 4, gases] <- -999# autocals happen at 4am everywhere else
+  #}
+  }
+  if (site == "Carrizo Plains School" | site == "Red Hills") {  # autocals happen at 2 am
+  d[d$hour == 2, gases] <- -999
+  }
+  if (site == "MORRO BAY" | site == "Nipomo Regional Park" | site == "Mesa 2"){
+  d[d$hour == 4, gases] <- -999
   }
   
 }
