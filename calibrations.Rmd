@@ -241,7 +241,7 @@ cal_plot_diff<-function(param, title="vf"){
     coef.var <- round(sqrt((n*sum(d^2) - sum(d)*sum(d))/(n*(n-1))) * sqrt((n-1)/qchisq(0.1, n-1) ), 2)
     
     bias.sign <- sum(sign(quantile(d, c(0.25, 0.75))))/2
-    if(bias.sign == 0) bias.sign <- "+/-"
+    if(bias.sign > -1 & bias.sign < 1) bias.sign <- "+/-"
     if(bias.sign == 1) bias.sign <- "+"
     if(bias.sign == -1) bias.sign <- "-"
     d <- abs(d)
