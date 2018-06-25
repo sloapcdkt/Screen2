@@ -622,7 +622,7 @@ if(length(gases) != 0){
   #d[d$hour == 4, gases] <- -999# autocals happen at 4am everywhere else
   #}
   }
-  if (site == "Carrizo Plains School" | site == "Red Hills") {  # autocals happen at 2 am
+  if (site == "Carrizo Plains School" | site == "RED HILLS") {  # autocals happen at 2 am
   d[d$hour == 2, gases] <- -999
   }
   if (site == "MORRO BAY" | site == "Nipomo Regional Park" | site == "Mesa 2"){
