@@ -113,7 +113,7 @@ if (sum(c("o3", "no", "no2", "nox", "so2", "bam10", "bam25") %in% vars)==0) {
 
 ```
 
-## Exceedence Report for `r site`, `r format(d$date[1], "%B %Y")`.
+## Exceedance Report for `r site`, `r format(d$date[1], "%B %Y")`.
 
 `r comment`
 
@@ -129,7 +129,7 @@ cbind(Minimum, Maximum, Average, Missing, Completeness)
 ```
 ------
 
-### Exceedence Summary (Unofficial)
+### Exceedance Summary (Unofficial)
 ```{r,echo=FALSE, warning=FALSE, message=FALSE, comment="", collapse = TRUE}
 
 #8-hour ozone stanard
@@ -144,10 +144,10 @@ if("o3" %in% names(d)==TRUE){
 
   if(dim(sub)[1] >= 1){
     cat("\n")
-    cat("Exceedences of the 8-hr ozone standard (70 ppb): \n")
+    cat("Exceedances of the 8-hr ozone standard (70 ppb): \n")
     print(data.frame(sub))
   } else {
-    cat("No exceedences of the 8-hr ozone standard (70 ppb). \n")
+    cat("No exceedances of the 8-hr ozone standard (70 ppb). \n")
   }
 }
 
@@ -163,10 +163,10 @@ if("o3" %in% names(d)==TRUE){
 
   if(dim(sub)[1] >= 1){
     cat("\n")
-    cat("Exceedences of the 1-hr ozone standard (90 ppb): \n")
+    cat("Exceedances of the 1-hr ozone standard (90 ppb): \n")
     print(data.frame(sub))
   } else {
-    cat("No exceedences of the 1-hr ozone standard (90 ppb). \n")
+    cat("No exceedances of the 1-hr ozone standard (90 ppb). \n")
   }
 }
 
@@ -181,10 +181,10 @@ if("no2" %in% names(d)==TRUE){
 
   if(dim(sub)[1] >= 1){
     cat("\n")
-    cat("Exceedences of the 1-hr NO2 standard (100 ppb): \n")
+    cat("Exceedances of the 1-hr NO2 standard (100 ppb): \n")
     print(data.frame(sub))
   } else {
-    cat("No exceedences of the 1-hr NO2 standard (100 ppb). \n")
+    cat("No exceedances of the 1-hr NO2 standard (100 ppb). \n")
   }
 }
 
@@ -199,10 +199,10 @@ if("so2" %in% names(d)==TRUE){
 
   if(dim(sub)[1] >= 1){
     cat("\n")
-    cat("Exceedences of the Federal 1-hr SO2 standard (75 ppb): \n")
+    cat("Exceedances of the Federal 1-hr SO2 standard (75 ppb): \n")
     print(data.frame(sub))
   } else {
-    cat("No exceedences of the Federeal 1-hr SO2 standard (75 ppb). \n")
+    cat("No exceedances of the Federeal 1-hr SO2 standard (75 ppb). \n")
   }
 }
 
@@ -218,10 +218,10 @@ if("bam25" %in% names(d)==TRUE){
 
   if(dim(sub)[1] >= 1){
     cat("\n")
-    cat("Exceedences of the 24-hr PM2.5 standard (35 ug/m3): \n")
+    cat("Exceedances of the 24-hr PM2.5 standard (35 ug/m3): \n")
     print(data.frame(sub), digits=3)
   } else {
-    cat("No exceedences of the 24-hr PM2.5 standard (35 ug/m3). \n")
+    cat("No exceedances of the 24-hr PM2.5 standard (35 ug/m3). \n")
   }
 }
 
@@ -237,10 +237,10 @@ if("bam10" %in% names(d)==TRUE){
 
   if(dim(sub)[1] >= 1){
     cat("\n")
-    cat("Exceedences of the California 24-hr PM10 standard (50 ug/m3): \n")
+    cat("Exceedances of the California 24-hr PM10 standard (50 ug/m3): \n")
     print(data.frame(sub), digits=3)
   } else {
-    cat("No exceedences of the California 24-hr PM10 standard (50 ug/m3). \n")
+    cat("No exceedances of the California 24-hr PM10 standard (50 ug/m3). \n")
   }
 }
 
@@ -256,10 +256,10 @@ if("bam10std" %in% names(d)==TRUE){
 
   if(dim(sub)[1] >= 1){
     cat("\n")
-    cat("Exceedences of the Federal 24-hr PM10 standard (155 ug/m3, STP): \n")
+    cat("Exceedances of the Federal 24-hr PM10 standard (155 ug/m3, STP): \n")
     print(data.frame(sub), digits=3)
   } else {
-    cat("No exceedences of the Federal 24-hr PM10 standard (155 ug/m3, STP). \n")
+    cat("No exceedances of the Federal 24-hr PM10 standard (155 ug/m3, STP). \n")
   }
 }
 
