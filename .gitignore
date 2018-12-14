@@ -12,3 +12,5 @@ arch-mesa.csv
 arch-oso.csv
 data/
 html/
+*.pdf
+*.zip
