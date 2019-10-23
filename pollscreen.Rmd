@@ -192,7 +192,8 @@ for(j in c("o3", "no", "no2", "nox", "so2", "bam10", "bam25")[id]){
   #plot it!
   boxplot(sub[,j]~sub$year, 
           main=paste(toupper(j), "at", site, "for", format(d$date[1], "%B")), 
-          las=2, varwidth=TRUE)
+          las=2, varwidth=TRUE,
+          xlab = "", ylab = "")
 }
 
 ```

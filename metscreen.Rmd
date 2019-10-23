@@ -143,7 +143,6 @@ old$year<-format(old$date, "%Y")
 monthid<-format(d$date[1], "%m")
 ```
 
-### Boxplots of Met Parameters
 ```{r}
 if("amt" %in% names(d) & "amt" %in% names(old)) {
   j<-"amt"
@@ -166,7 +165,9 @@ if("amt" %in% names(d) & "amt" %in% names(old)) {
   sub<-rbind(old.sub, d.sub)
 
   #plot it!
-  boxplot(sub[,j]~sub$year, main=paste(toupper(j), "at", site, "for", format(d$date[1], "%B")), las=2, varwidth=TRUE)
+  boxplot(sub[,j]~sub$year, main=paste(toupper(j), "at", site, "for", format(d$date[1], "%B")), 
+          las=2, varwidth=TRUE,
+          xlab = "", ylab = "")
 
 }
 
@@ -196,7 +197,8 @@ for(j in c("wsv","sigt")){
   sub<-rbind(old.sub, d.sub)
 
   #plot it!
-  boxplot(sub[,j]~sub$year, main=paste(toupper(j), "at", site, "for", format(d$date[1], "%B")), las=2)
+  boxplot(sub[,j]~sub$year, main=paste(toupper(j), "at", site, "for", format(d$date[1], "%B")), las=2,
+          xlab = "", ylab = "")
 }
 ```
 
