@@ -562,3 +562,38 @@ bamprec2<-function(strings = "bam_strings2.txt", append=FALSE){
   ## reset warnings
   options(warn = 0)
 }
+
+#################
+## autocals    ##
+#################
+
+## Temporary (hopefully) replacement for AV Calibration Graph Report,
+## which is currently not working. 
+
+## just like "calibrations" function, but allows several sites in one file.
+
+autocals <- function(){
+  
+  ## interactive data input if empty call (a la "calibrations()" )
+  ## 
+#  if(is.null(filename)) {
+    unlink(paste0(getwd(),"/data/autocals.html"))
+    rmarkdown::render("autocals.Rmd", output_dir = paste0(getwd(), "/html"), 
+                      envir = new.env(), quiet = TRUE, params = "ask")
+    shell.exec(paste0(getwd(),"/html/autocals.html"))
+  # } else {
+  #   #what to call html file:
+  #   if(is.null(html)){
+  #     html<-paste("html/", strsplit( filename, ".csv" , fixed=T)[[1]],"-cals.html", sep="")
+  #   } else {
+  #     html<-paste("html", html, sep="/")
+  #   }
+  #   rmarkdown::render("calibrations.Rmd", output_file=html, envir = new.env(), quiet = TRUE,
+  #                     params = list(filename = filename,
+  #                                   directory = "H: drive",
+  #                                   comment = ""))
+  #   shell.exec(paste(getwd(),html, sep="/"))
+  # }
+  
+}
+

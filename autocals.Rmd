@@ -1,0 +1,115 @@
+---
+output:
+  html_document:
+    theme: cerulean
+---
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+## load libs abd global params...
+
+knitr::opts_knit$set(width=90)
+knitr::opts_chunk$set(comment="", fig.width=8, fig.height = 5, echo = FALSE, warning=FALSE, message=FALSE )
+
+library(dplyr, warn.conflicts=FALSE )
+
+## load datafile:
+file <- strsplit(path.expand("~"), "/Documents")[[1]]
+file <- paste(file, "Desktop", "ExportCalibrationReport.csv", sep = "/")
+d <- read.table(file, as.is = TRUE, header=T, sep=",")
+
+## format data:
+d <- d[,-c(6,10)]
+names(d) <- c("site", "parameter", "seq", "phase", "date", "response", "true", "error")
+d$date <- as.POSIXct(d$date, tz="UTC", format="%d-%b-%Y")
+
+## Standardize parameter,seq, & site names
+if(("Mesa 2" %in% unique(d$site))==TRUE) {d$site[which(d$site=="Mesa 2")]<-"zMesa_cals"}
+if(("O3-cal" %in% unique(d$parameter))==TRUE) {d$parameter[which(d$parameter=="O3-cal")]<-"O3CAL"}
+if(("NO-cal" %in% unique(d$parameter))==TRUE) {d$parameter[which(d$parameter=="NO-cal")]<-"NOCAL"}
+if(("NO2-cal" %in% unique(d$parameter))==TRUE) {d$parameter[which(d$parameter=="NO2-cal")]<-"NO2CAL"}
+if(("NOx-cal" %in% unique(d$parameter))==TRUE) {d$parameter[which(d$parameter=="NOx-cal")]<-"NOXCAL"}
+if(("NOX-cal" %in% unique(d$parameter))==TRUE) {d$parameter[which(d$parameter=="NOX-cal")]<-"NOXCAL"}
+if(("NOXCON" %in% unique(d$parameter))==TRUE) {d$parameter[which(d$parameter=="NOXCON")]<-"NOXCony"}
+if(("SO2" %in% unique(d$parameter))==TRUE) {d$parameter[which(d$parameter=="SO2")]<-"SO2-CAL"}
+if(("ZSP" %in% unique(d$seq))==TRUE) {d$seq[which(d$seq=="ZSP")]<-"GASCALS"}
+if(("GASCAL" %in% unique(d$seq))==TRUE) {d$seq[which(d$seq=="GASCAL")]<-"GASCALS"}
+if(("GASCAL%" %in% unique(d$seq))==TRUE) {d$seq[which(d$seq=="GASCAL%")]<-"GASCALS%"}
+
+
+## function to plot 
+plot_response <- function(site, parameter, seq){
+  
+  # ID site and parameter
+  site.id <- which(c("zMesa_cals", "xRH_cals", "zAtas_cals", "zCP-cals", "zMB_cals", "zNRP_cals") == site)
+  site.name <- c("Mesa2", "Red Hills", "Atascadero", "Carrizo Plain", "Morro Bay", "NRP")[site.id]
+  param.id <- which(c("SO2-CAL", "O3CAL", "NO2CAL", "NOCAL", "NOXCAL", "NOXCony") == parameter)
+  param.name <- c("SO2", "Ozone", "NO2", "NO", "NOx", "NOx Converter")[param.id]
+  type <- ifelse(seq == "GASCALS", "Autocal Response at", "Autocal Percent Error at")
+  ylab <- ifelse(seq == "GASCALS", "pbb", "%")
+  ylab <- ifelse(parameter == "NOXCony", "%", ylab)
+  
+  # get data
+  dat <- d[d$site == site & d$parameter == parameter & d$seq == seq, ]
+  
+  # set plot parameters
+  oldpar <- par(no.readonly = TRUE) # store current par settings for later.
+  par(mar=c(5, 4, 4 , 8), xpd = TRUE) # for plotting legend outside
+  ylim <- c(min(c(dat$true, dat$response)), max(c(dat$true, dat$response)))
+  title <- paste(param.name, type, site.name)
+  
+  # plot span
+  plot(dat$date[dat$phase == "SPAN"], dat$response[dat$phase == "SPAN"],
+       type= "l", ylim = ylim, xlab = "", ylab = ylab, 
+       main = title, las = 2, xaxt = "n", col = "red", lty = 1, lwd = 2)
+  # span true
+  lines(dat$date[dat$phase == "SPAN"], dat$true[dat$phase == "SPAN"],
+        col = "red", lty = 2, lwd = 2)
+  # prec & zero response & true
+  abline(h = 0, lty=2, xpd = FALSE)
+  lines(dat$date[dat$phase == "PREC"], dat$response[dat$phase == "PREC"],
+        col = "blue", lty = 1, lwd = 2)
+  lines(dat$date[dat$phase == "PREC"], dat$true[dat$phase == "PREC"],
+        col = "blue", lty = 2, lwd = 2)
+  lines(dat$date[dat$phase == "ZERO"], dat$response[dat$phase == "ZERO"],
+        col = "green", lty = 1, lwd = 2)
+  lines(dat$date[dat$phase == "ZERO"], dat$true[dat$phase == "ZERO"],
+        col = "green", lty = 2, lwd = 2)
+  if(parameter == "NOXCony") { 
+    abline(h = 96, lty = 3, col = "red", xpd = FALSE) 
+    abline(h = 100, lty = 2, col = "black", xpd = FALSE)
+  }
+  
+  # axes and legend
+  axis(side = 1, las = 2, at = dat$date[seq(1, 31, by=2)], 
+         labels = format(dat$date[seq(1, 31, by=2)], "%b %d"))
+  
+  # legend
+  if(parameter == "NOXCony") {
+    legend("right", inset = c(-0.25, 0), legend=c("Span", "Precision", "Average", "Response", "True", "96% Limit"), 
+         lty=c(1,1,1,1,2,3), col=c("red", "blue", "green", 1,1, "red"), lwd=c(2,2,2,1.5,1.5, 1.5), bty="n")
+  } else {
+    legend("right", inset = c(-0.25, 0), legend=c("Span", "Precision", "Zero", "Response", "True"), 
+         lty=c(1,1,1,1,2), col=c("red", "blue", "green", 1,1), lwd=c(2,2,2,1.5,1.5), bty="n")
+  }
+  
+  
+  #reset
+  par(oldpar)
+  
+}
+
+
+
+```
+
+## Autocal Report
+
+```{r,echo=FALSE, warning=FALSE, message=FALSE, comment=""}
+combos <- sort(unique(paste(d$site, d$parameter, d$seq)))
+sites <- sapply(strsplit(combos, " "), function(a) a[1])
+parameters <- sapply(strsplit(combos, " "), function(a) a[2])
+seqs <- sapply(strsplit(combos, " "), function(a) a[3])
+
+invisible(mapply(plot_response, site = sites, parameter = parameters, seq = seqs))
+```
+
