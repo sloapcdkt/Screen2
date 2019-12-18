@@ -10,8 +10,6 @@ output:
 knitr::opts_knit$set(width=90)
 knitr::opts_chunk$set(comment="", fig.width=8, fig.height = 5, echo = FALSE, warning=FALSE, message=FALSE )
 
-library(dplyr, warn.conflicts=FALSE )
-
 ## load datafile:
 file <- strsplit(path.expand("~"), "/Documents")[[1]]
 file <- paste(file, "Desktop", "ExportCalibrationReport.csv", sep = "/")
