@@ -259,6 +259,9 @@ prec<-function(filename="AQSReport.txt",strings=NULL,thresh=5){
   header<-data.frame(c(paste("## Input file:", filename), 
                        paste("## Flagging threshold:", thresh, "%"),
                        paste("## Generated on:", date())))
+  # if 1C null code, remove conc.
+  f$V15[which(f$V16 == "1C")] <- ""
+  
   write.table(header, file=strings, quote=FALSE, row.names=FALSE, col.names=FALSE)
   write.table(f, file=strings, quote=FALSE, sep="|", na="", row.names=FALSE, col.names=FALSE, append=TRUE)
   f$percent.diff<-round(-100*(true-f$V14)/true,2)
@@ -285,6 +288,9 @@ prec<-function(filename="AQSReport.txt",strings=NULL,thresh=5){
   cat(paste("Date Range:", min(dates),"to", max(dates)),"\n")
   cat(paste("Strings exceeding % diff threshold (", thresh, "%) : ", sep=""))
   cat(paste(id, collapse=" " ))
+  cat(paste("\nStrings invalidated with 1C Null Code: ", sep=""))
+  id <- ifelse(length(which(f$V16 == "1C"))==0, "none", paste(which(f$V16 == "1C"), collapse = " "))
+  cat(id)
 }
 
 ###################################################
